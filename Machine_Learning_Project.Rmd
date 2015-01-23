@@ -1,0 +1,156 @@
+---
+output: html_document
+---
+####Practical Machine Learning Project
+
+####Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here
+
+####Data
+
+Set directory and download the data
+At the same time, remove the NAs
+
+```{r data, echo=TRUE}
+setwd("C:/Users/Elizabeth/Desktop/Datascience/Coursera/Machine_Learning/Assignment")
+getwd()
+
+train <- read.csv("C:/Users/Elizabeth/Desktop/Datascience/Coursera/Machine_Learning/Assignment/pml-training.csv", na.strings=c("NA",""))
+
+test <- read.csv("C:/Users/Elizabeth/Desktop/Datascience/Coursera/Machine_Learning/Assignment/pml-testing.csv", na.strings=c("NA",""))
+
+```
+
+####Load the libraries
+
+```{r libraries, echo=TRUE}
+library(caret)
+library(kernlab)
+library(rpart)
+library(randomForest)
+```
+
+####Set seed
+
+```{r seed, echo=TRUE}
+set.seed(1235)
+```
+
+#####Remove columns with missing values and non-exercise variables to build a better model
+
+```{r clean, echo=TRUE}
+train<-train[,colSums(is.na(train)) == 0]
+test <-test[,colSums(is.na(test)) == 0]
+train   <-train[,-c(1:7)]
+test <-test[,-c(1:7)]
+```
+
+######Partion the data into training and validation subsets
+
+Subset the training data into 70% training and 30% for validation. Keep the test data aside so that
+it is used to predict the final model
+
+```{r partion, echo=TRUE}
+inTrain <- createDataPartition(y=train$classe, p = 0.7, list = FALSE)
+training <- train[inTrain ,]
+validation <- train[-inTrain ,]
+```
+
+######dimension of the data
+
+```{r dimension, echo=TRUE}
+dim(training)
+dim(validation)
+```
+After preprocessing and cleaning the data, the training data has 13737 records and 53 variables. Validation dataset has 5885 records and 53 variables
+
+######visualize the data
+
+```{r visualize, echo=TRUE}
+table(training$classe)
+plot(training$classe, col="blue", main="Plot of classe variable", xlab="classe", ylab="Frequency")
+```
+The table shows the number of records in each of the classes A, B, C, D, E
+
+#Fitting the models
+
+I tried two models namely lasso and random forest
+
+#Fit lasso model
+
+```{r lasso, echo=TRUE}
+model_lasso <- rpart(classe ~ ., data=training, method="class")
+```
+
+##Test model using the training dataset
+
+```{r lasso_model, echo=TRUE}
+pred_lasso <- predict(model_lasso, training, type = "class")
+confusionMatrix(pred_lasso, training$classe)
+```
+###Model validation(Lasso model)
+
+Lets now validate the lasso model using the validation subset(out-of_sample)
+
+###Validate the lasso model using the validation subset
+
+```{r lasso_pred, echo=TRUE}
+pred1 <- predict(model_lasso, validation, type = "class")
+confusionMatrix(pred1, validation$classe)
+```
+##Accuracy and Out-of-sample error for random forest
+
+The accuracy for lasso model is 0.7468
+
+####Fit random forest model
+```{r rf, echo=TRUE}
+model_rf <- randomForest(classe ~. , data=training, method="class")
+```
+
+#Test model using the training dataset
+
+```{r rf_model, echo=TRUE}
+pred_rf <- predict(model_rf, training, type = "class")
+confusionMatrix(pred_rf, training$classe)
+```
+
+###Model validation(randomforest model)
+
+Lets now validate the random forest model using the validation subset(out-of_sample)
+```{r rf_pred, echo=TRUE}
+pred2 <- predict(model_rf, validation, type = "class")
+confusionMatrix(pred2, validation$classe)
+```
+##Accuracy and Out-of-sample error for random forest
+
+The accuracy for lasso model is 0.9954
+
+###Final prediction
+####Use the random forest model to predict the original test data
+
+```{r finalmodel, echo=TRUE}
+ptest <- predict(model_rf,test,type="class")
+ptest
+````
+
+###Submit the files
+
+```{r submission, echo=TRUE}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(ptest)
+```
+
+
+
+
+
+
+
